@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YOLOv8x AI Vision Studio &mdash; Deep Learning Detector</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%3E<text y=%2226%22 font-size=%2228%22>⚡</text></svg>">
+</head>
+<body>
+
+  <!-- Top App Header -->
+  <header class="app-header">
+    <div class="header-actions">
+      <button id="btnOpenCapabilities" class="btn btn-secondary btn-sm" title="View all YOLOv8x capabilities and 80 COCO classes">
+        <span class="material-symbols-outlined">dataset</span>
+        YOLOv8x Capabilities
+      </button>
+
+      <button id="btnWebcam" class="btn btn-secondary btn-sm" title="Capture from webcam">
+        <span class="material-symbols-outlined">videocam</span>
+        Webcam
+      </button>
+
+      <button id="btnReset" class="btn btn-outline btn-sm" title="Clear current image">
+        <span class="material-symbols-outlined">refresh</span>
+        Reset
+      </button>
+    </div>
+  </header>
+
+
+  <!-- Main Container -->
+  <div class="app-container">
+
+    <!-- LEFT SIDEBAR: Parameters & Task Configuration -->
+    <aside class="sidebar-left">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab-btn active" data-tab="config">
+          <span class="material-symbols-outlined">tune</span>
+          Inference
+        </button>
+        <button class="sidebar-tab-btn" data-tab="filters">
+          <span class="material-symbols-outlined">filter_list</span>
+          Classes
+        </button>
+        <button class="sidebar-tab-btn" data-tab="specs">
+          <span class="material-symbols-outlined">info</span>
+          Specs
+        </button>
+      </div>
+
+      <!-- Tab 1: Inference Config -->
+      <div id="tabContentConfig" class="sidebar-content">
+        <!-- Task Mode Selector -->
+        <div class="control-group">
+          <div class="control-label">
+            <span>Vision Task</span>
+            <span class="control-val-badge" id="taskCurrentBadge">Detection</span>
+          </div>
+          <div class="task-grid">
+            <div class="task-card active" data-task="detect">
+              <div class="task-icon">
+                <span class="material-symbols-outlined">crop_free</span>
+              </div>
+              <div class="task-info">
+                <div class="task-title">Object Detection</div>
+                <div class="task-sub">Bounding boxes (yolov8x.pt)</div>
+              </div>
+            </div>
+
+            <div class="task-card" data-task="segment">
+              <div class="task-icon">
+                <span class="material-symbols-outlined">polyline</span>
+              </div>
+              <div class="task-info">
+                <div class="task-title">Instance Segmentation</div>
+                <div class="task-sub">Pixel masks (yolov8x-seg)</div>
+              </div>
+            </div>
+
+            <div class="task-card" data-task="pose">
+              <div class="task-icon">
+                <span class="material-symbols-outlined">accessibility_new</span>
+              </div>
+              <div class="task-info">
+                <div class="task-title">Pose Estimation</div>
+                <div class="task-sub">17 keypoints (yolov8x-pose)</div>
+              </div>
+            </div>
+
+            <div class="task-card" data-task="classify">
+              <div class="task-icon">
+                <span class="material-symbols-outlined">category</span>
+              </div>
+              <div class="task-info">
+                <div class="task-title">Classification</div>
+                <div class="task-sub">Top categories (yolov8x-cls)</div>
+              </div>
+            </div>
+
+            <div class="task-card" data-task="obb">
+              <div class="task-icon">
+                <span class="material-symbols-outlined">rotate_90_degrees_ccw</span>
+              </div>
+              <div class="task-info">
+                <div class="task-title">Oriented Bounding Box</div>
+                <div class="task-sub">Rotated boxes (yolov8x-obb)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Confidence Threshold -->
+        <div class="control-group">
+          <div class="control-label">
+            <span>Confidence Threshold</span>
+            <span class="control-val-badge" id="confValueLabel">25%</span>
+          </div>
+          <input type="range" id="confSlider" class="shad-slider" min="5" max="95" value="25" step="1">
+          <span style="font-size: 0.72rem; color: var(--text-muted);">Discard predictions with lower certainty</span>
+        </div>
+
+        <!-- IoU / NMS Threshold -->
+        <div class="control-group">
+          <div class="control-label">
+            <span>IoU / NMS Threshold</span>
+            <span class="control-val-badge" id="iouValueLabel">45%</span>
+          </div>
+          <input type="range" id="iouSlider" class="shad-slider" min="10" max="90" value="45" step="5">
+          <span style="font-size: 0.72rem; color: var(--text-muted);">Non-maximum suppression overlap filter</span>
+        </div>
+
+        <!-- Hardware Device Selection -->
+        <div class="control-group">
+          <div class="control-label">
+            <span>Compute Device</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary btn-sm device-btn active" data-device="auto" style="flex: 1;">Auto</button>
+            <button class="btn btn-secondary btn-sm device-btn" data-device="cuda" style="flex: 1;">CUDA GPU</button>
+            <button class="btn btn-secondary btn-sm device-btn" data-device="cpu" style="flex: 1;">CPU</button>
+          </div>
+        </div>
+
+        <!-- Fast Action -->
+        <button id="btnReanalyze" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
+          <span class="material-symbols-outlined">bolt</span>
+          Run YOLOv8x Inference
+        </button>
+      </div>
+
+      <!-- Tab 2: COCO Class Filtering -->
+      <div id="tabContentFilters" class="sidebar-content" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 0.82rem; font-weight: 600;">Category Filter</span>
+          <div style="display: flex; gap: 6px;">
+            <button id="btnSelectAllCats" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.7rem;">All</button>
+            <button id="btnClearAllCats" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.7rem;">Clear</button>
+          </div>
+        </div>
+
+        <p style="font-size: 0.75rem; color: var(--text-muted);">
+          Select which COCO categories to include in detection results:
+        </p>
+
+        <div id="categoryChipsContainer" class="category-chips">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div style="border-top: 1px solid var(--border); padding-top: 12px; margin-top: 8px;">
+          <div class="control-label" style="margin-bottom: 6px;">
+            <span>Active Selected Classes</span>
+            <span id="selectedClassesCount" class="control-val-badge">80 Classes</span>
+          </div>
+          <p id="selectedClassesHint" style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.4;">
+            Currently detecting all 80 COCO categories.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab 3: Model Specifications -->
+      <div id="tabContentSpecs" class="sidebar-content" style="display: none;">
+        <div class="spec-card">
+          <div class="spec-row">
+            <span class="spec-name">Model</span>
+            <span class="spec-value">YOLOv8x (Extra Large)</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-name">Provider</span>
+            <span class="spec-value">Ultralytics</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-name">Parameters</span>
+            <span class="spec-value">~68.2 Million</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-name">Input Resolution</span>
+            <span class="spec-value">640 &times; 640 px</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-name">COCO mAP (50-95)</span>
+            <span class="spec-value" style="color: var(--primary);">53.9 mAP</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-name">Weights File</span>
+            <span class="spec-value">yolov8x.pt (136.9 MB)</span>
+          </div>
+          <div class="spec-row">
+            <span class="spec-name">COCO Classes</span>
+            <span class="spec-value">80 Object Classes</span>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 0.82rem; font-weight: 600; margin-bottom: 8px;">Hardware Acceleration</h4>
+          <div class="spec-card">
+            <div class="spec-row">
+              <span class="spec-name">PyTorch Device</span>
+              <span id="specDeviceVal" class="spec-value">Detecting...</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-name">CUDA Status</span>
+              <span id="specCudaVal" class="spec-value">Detecting...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER WORKSPACE -->
+    <main class="main-workspace">
+      <!-- Toolbar -->
+      <div class="workspace-toolbar">
+        <div class="toolbar-left">
+          <label class="btn btn-primary btn-sm" style="cursor: pointer;">
+            <span class="material-symbols-outlined">add_photo_alternate</span>
+            Upload Image
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+          </label>
+
+          <div style="display: flex; align-items: center; gap: 4px; border-left: 1px solid var(--border); padding-left: 12px;">
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Sample Tests:</span>
+            <div id="samplePillsList" style="display: flex; gap: 6px;">
+              <!-- Filled via API -->
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <div style="display: flex; gap: 4px; background: var(--bg-subtle); padding: 3px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <button id="viewToggleAnnotated" class="btn btn-sm btn-secondary active" style="padding: 3px 10px; font-size: 0.74rem;">Annotated</button>
+            <button id="viewToggleOriginal" class="btn btn-sm btn-secondary" style="padding: 3px 10px; font-size: 0.74rem;">Original</button>
+          </div>
+
+          <button id="btnDownloadImage" class="btn btn-secondary btn-sm" title="Download annotated image">
+            <span class="material-symbols-outlined">download</span>
+            Save Image
+          </button>
+        </div>
+      </div>
+
+      <!-- Canvas Area -->
+      <div class="main-canvas-area" id="canvasContainer">
+        <!-- Empty Dropzone State -->
+        <div id="emptyDropzone" class="dropzone-empty">
+          <div class="dropzone-icon-circle">
+            <span class="material-symbols-outlined">cloud_upload</span>
+          </div>
+          <div>
+            <div class="dropzone-title">Drop your image here</div>
+            <div class="dropzone-sub">Supports PNG, JPG, WEBP, JPEG up to 25MB</div>
+          </div>
+
+          <label class="btn btn-primary">
+            <span class="material-symbols-outlined">folder_open</span>
+            Browse Files
+            <input type="file" id="dropzoneInput" accept="image/*" style="display: none;">
+          </label>
+
+          <!-- Quick Samples -->
+          <div class="sample-presets-box">
+            <div class="sample-presets-title">Or test with ready-to-detect samples:</div>
+            <div id="sampleGalleryEmpty" class="sample-presets-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Visualizer Stage -->
+        <div id="visualizerStage" class="visualizer-stage" style="display: none;">
+          <div class="visualizer-image-wrap">
+            <img id="mainDisplayImage" src="" alt="YOLOv8x Visualizer">
+            <div id="bboxOverlayLayer" class="bbox-overlay-layer"></div>
+          </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay">
+          <div class="spinner"></div>
+          <div class="loading-text">YOLOv8x Analyzing Image...</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR: Detections List & Object Inspector -->
+    <aside class="sidebar-right">
+      <div class="sidebar-tabs" style="border-bottom: 1px solid var(--border);">
+        <div style="flex: 1; padding: 10px 14px; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="color: var(--primary);">radar</span>
+            <span>Detection Results</span>
+          </div>
+          <span id="headerDetCountBadge" class="brand-badge">0 Found</span>
+        </div>
+      </div>
+
+      <div class="sidebar-content" style="padding: 16px;">
+        <!-- Metrics strip -->
+        <div class="metrics-strip">
+          <div class="metric-card">
+            <div id="statTotalObjects" class="metric-val">0</div>
+            <div class="metric-lbl">Objects</div>
+          </div>
+          <div class="metric-card">
+            <div id="statLatency" class="metric-val">0<span style="font-size: 0.75rem;">ms</span></div>
+            <div class="metric-lbl">Inference</div>
+          </div>
+          <div class="metric-card">
+            <div id="statFps" class="metric-val">0</div>
+            <div class="metric-lbl">FPS</div>
+          </div>
+        </div>
+
+        <!-- Category breakdown badges -->
+        <div id="categorySummaryStrip" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+          <!-- Dynamically filled -->
+        </div>
+
+        <!-- Classification results if classification task -->
+        <div id="classificationResultsBox" style="display: none; flex-direction: column; gap: 8px;">
+          <div style="font-size: 0.78rem; font-weight: 600; text-transform: uppercase; color: var(--text-subtle);">Top ImageNet Predictions:</div>
+          <div id="classificationList" style="display: flex; flex-direction: column; gap: 6px;"></div>
+        </div>
+
+        <!-- Detection Objects List -->
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 0.78rem; font-weight: 600; text-transform: uppercase; color: var(--text-subtle);">Detected Entities</span>
+          <button id="btnExportJson" class="btn btn-secondary btn-sm" style="font-size: 0.7rem; padding: 2px 8px;">
+            <span class="material-symbols-outlined" style="font-size: 14px;">code</span>
+            Export JSON
+          </button>
+        </div>
+
+        <div id="detectionsList" class="detections-list">
+          <div style="text-align: center; padding: 40px 10px; color: var(--text-muted); font-size: 0.82rem;">
+            <span class="material-symbols-outlined" style="font-size: 36px; color: #cbd5e1; margin-bottom: 8px;">image_search</span>
+            <div>No detections to display yet.</div>
+            <div style="font-size: 0.75rem; color: var(--text-subtle); margin-top: 4px;">Upload an image or pick a sample above to begin.</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Capabilities Modal -->
+  <div id="capabilitiesModal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span class="material-symbols-outlined" style="color: var(--primary);">model_training</span>
+          YOLOv8x Specifications &amp; Capabilities
+        </div>
+        <button id="btnCloseModal" class="modal-close-btn">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div>
+          <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">Overview &amp; Architecture</h4>
+          <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.6;">
+            <strong>YOLOv8x</strong> is the flagship, largest, and most accurate deep learning model in the YOLOv8 family developed by Ultralytics. It features ~68 million parameters with high-resolution multi-scale feature pyramids (PANet) and decoupled anchor-free detection heads, achieving a state-of-the-art <strong>53.9 mAP</strong> on COCO (50-95).
+          </p>
+        </div>
+
+        <div>
+          <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">All 80 COCO Classes Supported (12 Categories)</h4>
+          <div id="modalCocoCategories" class="coco-categories-grid">
+            <!-- Filled dynamically -->
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">17 Human Body Keypoints (Pose Estimation)</h4>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <span class="coco-tag">1. Nose</span>
+            <span class="coco-tag">2. Left Eye</span>
+            <span class="coco-tag">3. Right Eye</span>
+            <span class="coco-tag">4. Left Ear</span>
+            <span class="coco-tag">5. Right Ear</span>
+            <span class="coco-tag">6. Left Shoulder</span>
+            <span class="coco-tag">7. Right Shoulder</span>
+            <span class="coco-tag">8. Left Elbow</span>
+            <span class="coco-tag">9. Right Elbow</span>
+            <span class="coco-tag">10. Left Wrist</span>
+            <span class="coco-tag">11. Right Wrist</span>
+            <span class="coco-tag">12. Left Hip</span>
+            <span class="coco-tag">13. Right Hip</span>
+            <span class="coco-tag">14. Left Knee</span>
+            <span class="coco-tag">15. Right Knee</span>
+            <span class="coco-tag">16. Left Ankle</span>
+            <span class="coco-tag">17. Right Ankle</span>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">Custom Fine-Tuning Domains</h4>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+            <div>&bull; Defects in manufacturing</div>
+            <div>&bull; License plates &amp; traffic control</div>
+            <div>&bull; Helmets &amp; PPE safety gear</div>
+            <div>&bull; Faces &amp; biometric detection</div>
+            <div>&bull; Products on shelves &amp; retail</div>
+            <div>&bull; Medical imaging features</div>
+            <div>&bull; Crops, weeds &amp; pests</div>
+            <div>&bull; Logos and text regions</div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 8px;">Real-World Use Cases</h4>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 0.8rem; color: var(--text-muted);">
+            <div>&bull; Surveillance and security</div>
+            <div>&bull; Traffic monitoring and counting</div>
+            <div>&bull; Retail analytics &amp; heatmaps</div>
+            <div>&bull; Sports analytics &amp; tracking</div>
+            <div>&bull; Industrial quality inspection</div>
+            <div>&bull; Autonomous robotics</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Webcam Modal -->
+  <div id="webcamModal" class="modal-backdrop">
+    <div class="modal-dialog" style="max-width: 540px;">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span class="material-symbols-outlined">videocam</span>
+          Live Webcam Snapshot
+        </div>
+        <button id="btnCloseWebcamModal" class="modal-close-btn">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body" style="align-items: center;">
+        <video id="webcamVideo" autoplay playsinline style="width: 100%; border-radius: var(--radius-md); background: #000;"></video>
+        <canvas id="webcamCanvas" style="display: none;"></canvas>
+        <button id="btnCaptureWebcam" class="btn btn-primary" style="width: 100%;">
+          <span class="material-symbols-outlined">photo_camera</span>
+          Capture &amp; Run Detection
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
